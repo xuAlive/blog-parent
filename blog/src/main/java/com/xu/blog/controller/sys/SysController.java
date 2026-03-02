@@ -4,6 +4,7 @@ import com.xu.common.annotation.RequireRole;
 import com.xu.blog.dao.SysUserDao;
 import com.xu.blog.param.po.sys.LoginUserPo;
 import com.xu.blog.param.po.sys.UserInfoPo;
+import com.xu.blog.param.vo.sys.LoginLocationStatsVO;
 import com.xu.blog.param.vo.sys.UserLoginVO;
 import com.xu.blog.service.SysUserInfoService;
 import com.xu.blog.service.SysUserService;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Map;
 
 @RequestMapping("/blog/sys")
 @RestController
@@ -62,14 +64,28 @@ public class SysController {
     }
 
     /**
-     * 查询用户登录记录（按账号和IP分组）
+     * 查询用户登录记录（按账号和IP分组，分页）
      * @param account 账号（可选，不传则查询所有账号）
-     * @return 登录记录列表
+     * @param page 页码，默认1
+     * @param size 每页大小，默认5
+     * @return 分页登录记录
      */
     @GetMapping("/getLoginRecords")
     @RequireRole("ADMIN")
-    public Response getLoginRecords(@RequestParam(value = "account", required = false) String account){
-         List<UserLoginVO> loginRecords = sysUserDao.getLoginRecords(account);
-         return Response.success(loginRecords);
+    public Response getLoginRecords(@RequestParam(value = "account", required = false) String account,
+                                    @RequestParam(value = "page", defaultValue = "1") int page,
+                                    @RequestParam(value = "size", defaultValue = "5") int size){
+         Map<String, Object> result = sysUserDao.getLoginRecords(account, page, size);
+         return Response.success(result);
+    }
+
+    /**
+     * 获取登录地点统计信息（地图标点 + 省份饼形图）
+     */
+    @GetMapping("/getLoginLocationStats")
+    @RequireRole("ADMIN")
+    public Response getLoginLocationStats(@RequestParam(value = "account", required = false) String account){
+         LoginLocationStatsVO stats = sysUserDao.getLoginLocationStats(account);
+         return Response.success(stats);
     }
 }

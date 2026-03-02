@@ -2,6 +2,7 @@ package com.xu.blog.mapper;
 
 import com.xu.blog.domain.SysUserLogin;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.xu.blog.param.vo.sys.ProvinceStatVO;
 import com.xu.blog.param.vo.sys.UserLoginVO;
 import org.apache.ibatis.annotations.Param;
 
@@ -16,11 +17,26 @@ import java.util.List;
 public interface SysUserLoginMapper extends BaseMapper<SysUserLogin> {
 
     /**
-     * 按账号和IP分组查询登录记录
-     * @param account 账号（可选，为null时查询所有账号）
-     * @return 登录记录列表
+     * 按账号和IP分组查询登录记录（分页）
      */
-    List<UserLoginVO> selectLoginRecordsGroupByAccountAndIp(@Param("account") String account);
+    List<UserLoginVO> selectLoginRecordsGroupByAccountAndIp(@Param("account") String account,
+                                                            @Param("offset") int offset,
+                                                            @Param("size") int size);
+
+    /**
+     * 按账号和IP分组查询登录记录总数
+     */
+    int countLoginRecordsGroupByAccountAndIp(@Param("account") String account);
+
+    /**
+     * 查询所有登录地点及次数（用于地图标点）
+     */
+    List<UserLoginVO> selectAllLoginLocations(@Param("account") String account);
+
+    /**
+     * 按省份统计登录次数（用于饼形图）
+     */
+    List<ProvinceStatVO> selectLoginCountByProvince(@Param("account") String account);
 }
 
 

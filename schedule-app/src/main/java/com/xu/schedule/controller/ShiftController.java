@@ -1,5 +1,6 @@
 package com.xu.schedule.controller;
 
+import com.xu.common.param.IdPO;
 import com.xu.common.response.Response;
 import com.xu.schedule.domain.Shift;
 import com.xu.schedule.service.ShiftService;
@@ -67,8 +68,9 @@ public class ShiftController {
     /**
      * 删除班次（软删除）
      */
-    @PostMapping("/delete/{id}")
-    public Response<?> deleteShift(@PathVariable Long id) {
+    @PostMapping("/delete")
+    public Response<?> deleteShift(@RequestBody IdPO po) {
+        Long id = po.getId();
         Shift shift = new Shift();
         shift.setId(id);
         shift.setIsDelete(1);

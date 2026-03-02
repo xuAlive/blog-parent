@@ -31,6 +31,9 @@ public class IpAddressUtil {
         }
     }
 
+    public static void main(String[] args) {
+        System.out.println(getAddress("125.121.174.146"));
+    }
     /**
      * 根据IP地址获取地理位置信息
      * @param ip IP地址

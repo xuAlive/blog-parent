@@ -5,8 +5,10 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xu.blog.dao.SysUserDao;
 import com.xu.blog.domain.SysRole;
 import com.xu.blog.domain.SysUser;
+import com.xu.blog.domain.SysUserInfo;
 import com.xu.blog.domain.SysUserLogin;
 import com.xu.blog.mapper.SysUserLoginMapper;
+import com.xu.blog.mapper.SysUserInfoMapper;
 import com.xu.blog.mapper.SysUserMapper;
 import com.xu.common.param.UserToken;
 import com.xu.blog.param.po.sys.LoginUserPo;
@@ -36,10 +38,12 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
     private final SysUserDao userDao;
     private final SysRoleService sysRoleService;
+    private final SysUserInfoMapper sysUserInfoMapper;
 
-    public SysUserServiceImpl(SysUserDao userDao, SysRoleService sysRoleService) {
+    public SysUserServiceImpl(SysUserDao userDao, SysRoleService sysRoleService, SysUserInfoMapper sysUserInfoMapper) {
         this.userDao = userDao;
         this.sysRoleService = sysRoleService;
+        this.sysUserInfoMapper = sysUserInfoMapper;
     }
 
 
@@ -117,7 +121,22 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                 } else {
                     log.warn("GUEST角色不存在，请检查数据库");
                 }
-                return Response.success("注册成功");
+
+                // 创建用户详情记录（保存昵称）
+                if (!StringUtils.isEmpty(po.getNickname())) {
+                    SysUserInfo userInfo = new SysUserInfo();
+                    userInfo.setAccount(po.getAccount());
+                    userInfo.setName(po.getNickname());
+                    sysUserInfoMapper.insert(userInfo);
+                }
+
+                // 生成token并返回，注册后直接登录
+                UserToken userToken = new UserToken();
+                userToken.setAccount(sysUser.getAccount());
+                userToken.setUserName(!StringUtils.isEmpty(po.getNickname()) ? po.getNickname() : sysUser.getAccount());
+                String token = JWTUtil.createToken(userToken);
+                log.info("{} 注册成功，返回token", po.getAccount());
+                return Response.success(token);
             }
             return Response.error("注册失败");
         } catch (Exception e) {

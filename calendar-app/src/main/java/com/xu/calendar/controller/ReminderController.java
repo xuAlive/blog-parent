@@ -4,6 +4,7 @@ import com.xu.calendar.domain.Reminder;
 import com.xu.calendar.param.po.ReminderPO;
 import com.xu.calendar.param.vo.ReminderVO;
 import com.xu.calendar.service.ReminderService;
+import com.xu.common.param.IdPO;
 import com.xu.common.response.Response;
 import com.xu.common.utils.SessionUtil;
 import org.springframework.beans.BeanUtils;
@@ -61,8 +62,9 @@ public class ReminderController {
     /**
      * 删除提醒（软删除）
      */
-    @PostMapping("/delete/{id}")
-    public Response<?> deleteReminder(@PathVariable Long id) {
+    @PostMapping("/delete")
+    public Response<?> deleteReminder(@RequestBody IdPO po) {
+        Long id = po.getId();
         Reminder reminder = new Reminder();
         reminder.setId(id);
         reminder.setIsDelete(1);
@@ -85,18 +87,18 @@ public class ReminderController {
     /**
      * 取消提醒
      */
-    @PostMapping("/cancel/{id}")
-    public Response<?> cancelReminder(@PathVariable Long id) {
-        boolean result = reminderService.cancelReminder(id);
+    @PostMapping("/cancel")
+    public Response<?> cancelReminder(@RequestBody IdPO po) {
+        boolean result = reminderService.cancelReminder(po.getId());
         return Response.checkResult(result);
     }
 
     /**
      * 重试失败的提醒
      */
-    @PostMapping("/retry/{id}")
-    public Response<?> retryReminder(@PathVariable Long id) {
-        boolean result = reminderService.retryReminder(id);
+    @PostMapping("/retry")
+    public Response<?> retryReminder(@RequestBody IdPO po) {
+        boolean result = reminderService.retryReminder(po.getId());
         return Response.checkResult(result);
     }
 

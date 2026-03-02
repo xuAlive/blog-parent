@@ -4,6 +4,7 @@ import com.xu.calendar.domain.CyclePlan;
 import com.xu.calendar.param.po.CyclePlanPO;
 import com.xu.calendar.param.vo.CyclePlanVO;
 import com.xu.calendar.service.CyclePlanService;
+import com.xu.common.param.IdPO;
 import com.xu.common.response.Response;
 import com.xu.common.utils.SessionUtil;
 import org.springframework.beans.BeanUtils;
@@ -74,8 +75,9 @@ public class CyclePlanController {
     /**
      * 删除周期计划（软删除）
      */
-    @PostMapping("/delete/{id}")
-    public Response<?> deleteCyclePlan(@PathVariable Long id) {
+    @PostMapping("/delete")
+    public Response<?> deleteCyclePlan(@RequestBody IdPO po) {
+        Long id = po.getId();
         CyclePlan plan = new CyclePlan();
         plan.setId(id);
         plan.setIsDelete(1);
@@ -98,18 +100,18 @@ public class CyclePlanController {
     /**
      * 暂停周期计划
      */
-    @PostMapping("/pause/{id}")
-    public Response<?> pauseCyclePlan(@PathVariable Long id) {
-        boolean result = cyclePlanService.pauseCyclePlan(id);
+    @PostMapping("/pause")
+    public Response<?> pauseCyclePlan(@RequestBody IdPO po) {
+        boolean result = cyclePlanService.pauseCyclePlan(po.getId());
         return Response.checkResult(result);
     }
 
     /**
      * 恢复周期计划
      */
-    @PostMapping("/resume/{id}")
-    public Response<?> resumeCyclePlan(@PathVariable Long id) {
-        boolean result = cyclePlanService.resumeCyclePlan(id);
+    @PostMapping("/resume")
+    public Response<?> resumeCyclePlan(@RequestBody IdPO po) {
+        boolean result = cyclePlanService.resumeCyclePlan(po.getId());
         return Response.checkResult(result);
     }
 

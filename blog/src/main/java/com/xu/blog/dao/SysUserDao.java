@@ -7,13 +7,17 @@ import com.xu.blog.domain.SysUserLogin;
 import com.xu.blog.mapper.SysUserInfoMapper;
 import com.xu.blog.mapper.SysUserLoginMapper;
 import com.xu.blog.mapper.SysUserMapper;
+import com.xu.blog.param.vo.sys.LoginLocationStatsVO;
+import com.xu.blog.param.vo.sys.ProvinceStatVO;
 import com.xu.blog.param.vo.sys.UserLoginVO;
 import com.xu.blog.utils.IpAddressUtil;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 系统用户信息数据库交互层 降低service和其他mapper的依赖
@@ -74,11 +78,33 @@ public class SysUserDao {
     }
 
     /**
-     * 按账号和IP分组查询登录记录
+     * 按账号和IP分组查询登录记录（分页）
      * @param account 账号（可选，为null时查询所有账号）
-     * @return 登录记录列表
+     * @param page 页码（从1开始）
+     * @param size 每页大小
+     * @return 包含 records 和 total 的 Map
      */
-    public List<UserLoginVO> getLoginRecords(String account) {
-        return loginMapper.selectLoginRecordsGroupByAccountAndIp(account);
+    public Map<String, Object> getLoginRecords(String account, int page, int size) {
+        int offset = (page - 1) * size;
+        List<UserLoginVO> records = loginMapper.selectLoginRecordsGroupByAccountAndIp(account, offset, size);
+        int total = loginMapper.countLoginRecordsGroupByAccountAndIp(account);
+        Map<String, Object> result = new HashMap<>();
+        result.put("records", records);
+        result.put("total", total);
+        return result;
+    }
+
+    /**
+     * 获取登录地点统计信息（地图 + 饼形图）
+     * @param account 账号（可选）
+     * @return 地点统计VO
+     */
+    public LoginLocationStatsVO getLoginLocationStats(String account) {
+        List<UserLoginVO> locations = loginMapper.selectAllLoginLocations(account);
+        List<ProvinceStatVO> provinceStats = loginMapper.selectLoginCountByProvince(account);
+        LoginLocationStatsVO vo = new LoginLocationStatsVO();
+        vo.setLocations(locations);
+        vo.setProvinceStats(provinceStats);
+        return vo;
     }
 }

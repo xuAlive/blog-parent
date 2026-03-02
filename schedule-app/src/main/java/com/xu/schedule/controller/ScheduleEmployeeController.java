@@ -1,6 +1,7 @@
 package com.xu.schedule.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.xu.common.param.IdPO;
 import com.xu.common.response.Response;
 import com.xu.schedule.domain.ScheduleEmployee;
 import com.xu.schedule.service.ScheduleEmployeeService;
@@ -96,8 +97,9 @@ public class ScheduleEmployeeController {
     /**
      * 删除员工（软删除）
      */
-    @PostMapping("/delete/{id}")
-    public Response<?> deleteEmployee(@PathVariable Long id) {
+    @PostMapping("/delete")
+    public Response<?> deleteEmployee(@RequestBody IdPO po) {
+        Long id = po.getId();
         ScheduleEmployee employee = new ScheduleEmployee();
         employee.setId(id);
         employee.setIsDelete(1);

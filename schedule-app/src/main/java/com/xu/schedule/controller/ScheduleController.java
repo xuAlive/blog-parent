@@ -1,5 +1,6 @@
 package com.xu.schedule.controller;
 
+import com.xu.common.param.IdPO;
 import com.xu.common.response.Response;
 import com.xu.common.utils.SessionUtil;
 import com.xu.schedule.domain.Schedule;
@@ -90,8 +91,9 @@ public class ScheduleController {
     /**
      * 删除排班（软删除）
      */
-    @PostMapping("/delete/{id}")
-    public Response<?> deleteSchedule(@PathVariable Long id) {
+    @PostMapping("/delete")
+    public Response<?> deleteSchedule(@RequestBody IdPO po) {
+        Long id = po.getId();
         Schedule schedule = new Schedule();
         schedule.setId(id);
         schedule.setIsDelete(1);

@@ -4,6 +4,7 @@ import com.xu.calendar.domain.Event;
 import com.xu.calendar.param.po.EventPO;
 import com.xu.calendar.param.vo.EventVO;
 import com.xu.calendar.service.EventService;
+import com.xu.common.param.IdPO;
 import com.xu.common.response.Response;
 import com.xu.common.utils.SessionUtil;
 import org.springframework.beans.BeanUtils;
@@ -62,8 +63,9 @@ public class EventController {
     /**
      * 删除事件（软删除）
      */
-    @PostMapping("/delete/{id}")
-    public Response<?> deleteEvent(@PathVariable Long id) {
+    @PostMapping("/delete")
+    public Response<?> deleteEvent(@RequestBody IdPO po) {
+        Long id = po.getId();
         Event event = new Event();
         event.setId(id);
         event.setIsDelete(1);
@@ -113,9 +115,9 @@ public class EventController {
     /**
      * 更新事件状态
      */
-    @PostMapping("/status/{id}")
-    public Response<?> updateStatus(@PathVariable Long id, @RequestParam("status") Integer status) {
-        boolean result = eventService.updateStatus(id, status);
+    @PostMapping("/status")
+    public Response<?> updateStatus(@RequestBody EventPO po) {
+        boolean result = eventService.updateStatus(po.getId(), po.getStatus());
         return Response.checkResult(result);
     }
 

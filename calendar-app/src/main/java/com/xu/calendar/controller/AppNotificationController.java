@@ -2,6 +2,7 @@ package com.xu.calendar.controller;
 
 import com.xu.calendar.domain.AppNotification;
 import com.xu.calendar.service.AppNotificationService;
+import com.xu.common.param.IdPO;
 import com.xu.common.response.Response;
 import com.xu.common.utils.SessionUtil;
 import org.springframework.web.bind.annotation.*;
@@ -34,9 +35,9 @@ public class AppNotificationController {
     /**
      * 标记为已读
      */
-    @PostMapping("/read/{id}")
-    public Response<?> markAsRead(@PathVariable Long id) {
-        boolean result = appNotificationService.markAsRead(id);
+    @PostMapping("/read")
+    public Response<?> markAsRead(@RequestBody IdPO po) {
+        boolean result = appNotificationService.markAsRead(po.getId());
         return Response.checkResult(result);
     }
 
