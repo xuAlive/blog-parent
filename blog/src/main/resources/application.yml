@@ -59,3 +59,14 @@ wechat:
   app-secret: ${WECHAT_APP_SECRET:f9be087be1186342cf96a0249563a0ab}
   redirect-domain: ${WECHAT_REDIRECT_DOMAIN:https://www.xbl-blog.top}
 
+# 图片上传配置
+upload:
+  image:
+    storage-path: ${UPLOAD_IMAGE_PATH:/home/img}
+    domain: ${UPLOAD_IMAGE_DOMAIN:https://www.xbl-blog.top}
+    url-prefix: /img
+
+blog:
+  jwt:
+    secret: ${BLOG_JWT_SECRET:change-this-in-env}
+    expire-ms: ${BLOG_JWT_EXPIRE_MS:7200000}

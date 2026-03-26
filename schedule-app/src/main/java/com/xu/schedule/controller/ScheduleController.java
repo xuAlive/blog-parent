@@ -4,6 +4,7 @@ import com.xu.common.param.IdPO;
 import com.xu.common.response.Response;
 import com.xu.common.utils.SessionUtil;
 import com.xu.schedule.domain.Schedule;
+import com.xu.schedule.service.ScheduleAccessService;
 import com.xu.schedule.service.ScheduleService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
@@ -20,9 +21,11 @@ import java.util.List;
 public class ScheduleController {
 
     private final ScheduleService scheduleService;
+    private final ScheduleAccessService scheduleAccessService;
 
-    public ScheduleController(ScheduleService scheduleService) {
+    public ScheduleController(ScheduleService scheduleService, ScheduleAccessService scheduleAccessService) {
         this.scheduleService = scheduleService;
+        this.scheduleAccessService = scheduleAccessService;
     }
 
     /**
@@ -32,7 +35,10 @@ public class ScheduleController {
     public Response<List<Schedule>> getScheduleList(
             @RequestParam("startDate") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
             @RequestParam("endDate") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate) {
-        List<Schedule> schedules = scheduleService.getSchedulesByDateRange(startDate, endDate);
+        String currentAccount = SessionUtil.getCurrentAccount();
+        List<Schedule> schedules = scheduleAccessService.isAdmin(currentAccount)
+                ? scheduleService.getSchedulesByDateRange(startDate, endDate)
+                : scheduleService.getSchedulesByAccount(currentAccount, startDate, endDate);
         return Response.success(schedules);
     }
 
@@ -53,9 +59,11 @@ public class ScheduleController {
      */
     @PostMapping("/create")
     public Response<?> createSchedule(@RequestBody Schedule schedule) {
+        String currentAccount = SessionUtil.getCurrentAccount();
+        scheduleAccessService.requireAdmin(currentAccount);
         schedule.setCreateTime(LocalDateTime.now());
         schedule.setUpdateTime(LocalDateTime.now());
-        schedule.setCreateBy(SessionUtil.getCurrentAccount());
+        schedule.setCreateBy(currentAccount);
         schedule.setIsDelete(0);
         boolean result = scheduleService.save(schedule);
         return Response.checkResult(result);
@@ -67,6 +75,7 @@ public class ScheduleController {
     @PostMapping("/batchCreate")
     public Response<?> batchCreateSchedules(@RequestBody List<Schedule> schedules) {
         String currentAccount = SessionUtil.getCurrentAccount();
+        scheduleAccessService.requireAdmin(currentAccount);
         LocalDateTime now = LocalDateTime.now();
         schedules.forEach(s -> {
             s.setCreateTime(now);
@@ -83,6 +92,15 @@ public class ScheduleController {
      */
     @PostMapping("/update")
     public Response<?> updateSchedule(@RequestBody Schedule schedule) {
+        String currentAccount = SessionUtil.getCurrentAccount();
+        scheduleAccessService.requireAdmin(currentAccount);
+        Schedule existing = scheduleService.getById(schedule.getId());
+        if (existing == null || existing.getIsDelete() != null && existing.getIsDelete() == 1) {
+            return Response.error("排班不存在");
+        }
+        if (existing.getCreateBy() != null && !existing.getCreateBy().equals(currentAccount)) {
+            return Response.error("只能修改自己创建的排班");
+        }
         schedule.setUpdateTime(LocalDateTime.now());
         boolean result = scheduleService.updateById(schedule);
         return Response.checkResult(result);
@@ -93,7 +111,16 @@ public class ScheduleController {
      */
     @PostMapping("/delete")
     public Response<?> deleteSchedule(@RequestBody IdPO po) {
+        String currentAccount = SessionUtil.getCurrentAccount();
+        scheduleAccessService.requireAdmin(currentAccount);
         Long id = po.getId();
+        Schedule existing = scheduleService.getById(id);
+        if (existing == null || existing.getIsDelete() != null && existing.getIsDelete() == 1) {
+            return Response.error("排班不存在");
+        }
+        if (existing.getCreateBy() != null && !existing.getCreateBy().equals(currentAccount)) {
+            return Response.error("只能删除自己创建的排班");
+        }
         Schedule schedule = new Schedule();
         schedule.setId(id);
         schedule.setIsDelete(1);

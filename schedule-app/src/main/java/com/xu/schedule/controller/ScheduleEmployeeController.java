@@ -3,7 +3,9 @@ package com.xu.schedule.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.xu.common.param.IdPO;
 import com.xu.common.response.Response;
+import com.xu.common.utils.SessionUtil;
 import com.xu.schedule.domain.ScheduleEmployee;
+import com.xu.schedule.service.ScheduleAccessService;
 import com.xu.schedule.service.ScheduleEmployeeService;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,9 +20,11 @@ import java.util.List;
 public class ScheduleEmployeeController {
 
     private final ScheduleEmployeeService employeeService;
+    private final ScheduleAccessService scheduleAccessService;
 
-    public ScheduleEmployeeController(ScheduleEmployeeService employeeService) {
+    public ScheduleEmployeeController(ScheduleEmployeeService employeeService, ScheduleAccessService scheduleAccessService) {
         this.employeeService = employeeService;
+        this.scheduleAccessService = scheduleAccessService;
     }
 
     /**
@@ -28,6 +32,7 @@ public class ScheduleEmployeeController {
      */
     @GetMapping("/list")
     public Response<List<ScheduleEmployee>> getActiveEmployees() {
+        scheduleAccessService.requireAdmin(SessionUtil.getCurrentAccount());
         List<ScheduleEmployee> employees = employeeService.getActiveEmployees();
         return Response.success(employees);
     }
@@ -41,6 +46,7 @@ public class ScheduleEmployeeController {
             @RequestParam(value = "size", defaultValue = "10") int size,
             @RequestParam(value = "department", required = false) String department,
             @RequestParam(value = "keyword", required = false) String keyword) {
+        scheduleAccessService.requireAdmin(SessionUtil.getCurrentAccount());
         IPage<ScheduleEmployee> result = employeeService.pageEmployees(page, size, department, keyword);
         return Response.success(result);
     }
@@ -50,6 +56,7 @@ public class ScheduleEmployeeController {
      */
     @GetMapping("/detail/{id}")
     public Response<ScheduleEmployee> getEmployeeDetail(@PathVariable Long id) {
+        scheduleAccessService.requireAdmin(SessionUtil.getCurrentAccount());
         ScheduleEmployee employee = employeeService.getById(id);
         return Response.success(employee);
     }
@@ -59,6 +66,7 @@ public class ScheduleEmployeeController {
      */
     @GetMapping("/getByCode")
     public Response<ScheduleEmployee> getByEmployeeCode(@RequestParam("code") String code) {
+        scheduleAccessService.requireAdmin(SessionUtil.getCurrentAccount());
         ScheduleEmployee employee = employeeService.getByEmployeeCode(code);
         return Response.success(employee);
     }
@@ -68,6 +76,8 @@ public class ScheduleEmployeeController {
      */
     @PostMapping("/create")
     public Response<?> createEmployee(@RequestBody ScheduleEmployee employee) {
+        String currentAccount = SessionUtil.getCurrentAccount();
+        scheduleAccessService.requireAdmin(currentAccount);
         // 检查员工编号是否已存在
         ScheduleEmployee existing = employeeService.getByEmployeeCode(employee.getEmployeeCode());
         if (existing != null) {
@@ -76,6 +86,7 @@ public class ScheduleEmployeeController {
 
         employee.setCreateTime(LocalDateTime.now());
         employee.setUpdateTime(LocalDateTime.now());
+        employee.setCreateBy(currentAccount);
         employee.setIsDelete(0);
         if (employee.getStatus() == null) {
             employee.setStatus(1);
@@ -89,6 +100,7 @@ public class ScheduleEmployeeController {
      */
     @PostMapping("/update")
     public Response<?> updateEmployee(@RequestBody ScheduleEmployee employee) {
+        scheduleAccessService.requireAdmin(SessionUtil.getCurrentAccount());
         employee.setUpdateTime(LocalDateTime.now());
         boolean result = employeeService.updateById(employee);
         return Response.checkResult(result);
@@ -99,6 +111,7 @@ public class ScheduleEmployeeController {
      */
     @PostMapping("/delete")
     public Response<?> deleteEmployee(@RequestBody IdPO po) {
+        scheduleAccessService.requireAdmin(SessionUtil.getCurrentAccount());
         Long id = po.getId();
         ScheduleEmployee employee = new ScheduleEmployee();
         employee.setId(id);
@@ -113,6 +126,7 @@ public class ScheduleEmployeeController {
      */
     @GetMapping("/departments")
     public Response<List<String>> getAllDepartments() {
+        scheduleAccessService.requireAdmin(SessionUtil.getCurrentAccount());
         List<String> departments = employeeService.getAllDepartments();
         return Response.success(departments);
     }

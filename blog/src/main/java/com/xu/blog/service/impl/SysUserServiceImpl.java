@@ -14,6 +14,7 @@ import com.xu.common.param.UserToken;
 import com.xu.blog.param.po.sys.LoginUserPo;
 import com.xu.blog.service.SysRoleService;
 import com.xu.blog.service.SysUserService;
+import com.xu.blog.utils.PasswordUtil;
 import com.xu.common.utils.JWTUtil;
 import com.xu.common.response.Response;
 import lombok.extern.slf4j.Slf4j;
@@ -63,12 +64,20 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             return Response.error("账号不存在");
         }
         //验证密码是否正确
-        if (!sysUser.getPassword().equals(po.getPassword())){
+        if (!PasswordUtil.matches(po.getPassword(), sysUser.getPassword())){
             return Response.error("密码错误");
+        }
+        if (PasswordUtil.needsUpgrade(sysUser.getPassword())) {
+            SysUser updateUser = new SysUser();
+            updateUser.setPassword(PasswordUtil.encode(po.getPassword()));
+            baseMapper.update(updateUser, new QueryWrapper<SysUser>().eq("account", po.getAccount()));
         }
         //登陆成功 记录登陆用户的ip
         String userIP = servletRequest.getHeader("X-Forwarded-For");
-        if (userIP == null) {
+        if (userIP != null && userIP.contains(",")) {
+            userIP = userIP.split(",")[0].trim();
+        }
+        if (userIP == null || userIP.isBlank()) {
             userIP = servletRequest.getRemoteAddr();
         }
 
@@ -85,7 +94,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         userToken.setUserName(sysUser.getAccount());
 
         String token = JWTUtil.createToken(userToken);
-        log.info("{} 登陆成功，返回token为 {}", po.getAccount(), token);
+        log.info("{} 登陆成功", po.getAccount());
         return Response.success(token);
     }
 
@@ -108,6 +117,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         try {
             SysUser sysUser = new SysUser();
             BeanUtils.copyProperties(po,sysUser);
+            sysUser.setPassword(PasswordUtil.encode(po.getPassword()));
             // 新注册用户默认手机号未验证
             sysUser.setPhoneVerified(0);
             int insert = baseMapper.insert(sysUser);
@@ -147,7 +157,6 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
 
 }
-
 
 
 

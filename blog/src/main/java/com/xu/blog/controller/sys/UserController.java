@@ -67,10 +67,14 @@ public class UserController {
             boolean updateResult = sysUserService.updateById(user);
 
             if (updateResult) {
-                // 分配USER角色
+                // 游客验证成功后升级为正式用户，并移除游客角色，避免菜单/权限仍然做并集
                 SysRole userRole = sysRoleService.selectByRoleCode("USER");
                 if (userRole != null) {
                     sysRoleService.assignRoleToUser(account, userRole.getId());
+                    SysRole guestRole = sysRoleService.selectByRoleCode("GUEST");
+                    if (guestRole != null) {
+                        sysRoleService.removeRoleFromUser(account, guestRole.getId());
+                    }
                     log.info("用户{}验证手机号成功，升级为USER角色", account);
                     return Response.success("手机号验证成功，已升级为正式用户");
                 } else {

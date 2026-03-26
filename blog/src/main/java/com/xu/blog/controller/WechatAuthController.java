@@ -49,13 +49,11 @@ public class WechatAuthController {
         try {
             log.info("收到微信授权回调, code: {}, target: {}", code, target);
 
-            // 处理授权，获取token
             String token = wechatAuthService.handleCallback(code);
+            String loginCode = wechatAuthService.issueLoginCode(token);
 
-            // 重定向到前端页面，携带token
-            // 前端需要从URL中获取token并存储
-            String redirectUrl = target + (target.contains("?") ? "&" : "?") + "token=" + token;
-            log.info("微信授权成功，重定向到: {}", redirectUrl);
+            String redirectUrl = target + (target.contains("?") ? "&" : "?") + "authCode=" + loginCode;
+            log.info("微信授权成功，重定向到目标页面");
 
             response.sendRedirect(redirectUrl);
 
@@ -78,5 +76,11 @@ public class WechatAuthController {
         String authUrl = wechatAuthService.getAuthUrl(target);
         log.info("跳转微信授权, target: {}, authUrl: {}", target, authUrl);
         response.sendRedirect(authUrl);
+    }
+
+    @PostMapping("/exchange")
+    @ResponseBody
+    public Response exchange(@RequestParam("code") String code) {
+        return Response.success(wechatAuthService.exchangeLoginCode(code));
     }
 }

@@ -8,6 +8,7 @@ import com.xu.blog.param.vo.sys.LoginLocationStatsVO;
 import com.xu.blog.param.vo.sys.UserLoginVO;
 import com.xu.blog.service.SysUserInfoService;
 import com.xu.blog.service.SysUserService;
+import com.xu.blog.service.SysPermissionService;
 import com.xu.common.utils.SessionUtil;
 import com.xu.common.response.Response;
 import org.apache.commons.lang3.StringUtils;
@@ -24,11 +25,14 @@ public class SysController {
     private final SysUserService sysUserService;
     private final SysUserInfoService sysUserInfoService;
     private final SysUserDao sysUserDao;
+    private final SysPermissionService sysPermissionService;
 
-    public SysController(SysUserService sysUserService, SysUserInfoService sysUserInfoService, SysUserDao sysUserDao) {
+    public SysController(SysUserService sysUserService, SysUserInfoService sysUserInfoService,
+                         SysUserDao sysUserDao, SysPermissionService sysPermissionService) {
         this.sysUserService = sysUserService;
         this.sysUserInfoService = sysUserInfoService;
         this.sysUserDao = sysUserDao;
+        this.sysPermissionService = sysPermissionService;
     }
 
     @PostMapping("/login")
@@ -43,14 +47,26 @@ public class SysController {
 
     @GetMapping("/getUserInfoByAccount")
     public Response getUserInfoByAccount(@RequestParam(value = "account",required = false) String account){
+        String currentAccount = SessionUtil.getCurrentAccount();
         if (StringUtils.isBlank( account)){
-            account = SessionUtil.getCurrentAccount();
+            account = currentAccount;
+        } else if (!StringUtils.equals(account, currentAccount)
+                && !sysPermissionService.hasPermission(currentAccount, "system:user:list")) {
+            return Response.error("无权查看其他用户信息");
         }
         return sysUserInfoService.getUserInfoByAccount(account);
     }
 
     @PostMapping("/updateUserInfo")
     public Response updateUserInfo(@RequestBody UserInfoPo po){
+        String currentAccount = SessionUtil.getCurrentAccount();
+        if (po == null || StringUtils.isBlank(po.getAccount())) {
+            return Response.error("账号不能为空");
+        }
+        if (!StringUtils.equals(po.getAccount(), currentAccount)
+                && !sysPermissionService.hasPermission(currentAccount, "system:user:list")) {
+            return Response.error("无权修改其他用户信息");
+        }
         return sysUserInfoService.updateUserInfo(po);
     }
 

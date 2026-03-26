@@ -21,6 +21,10 @@ public interface WechatAuthService {
      */
     String handleCallback(String code);
 
+    String issueLoginCode(String token);
+
+    String exchangeLoginCode(String loginCode);
+
     /**
      * 根据openid获取或创建用户
      * @param openid 微信openid

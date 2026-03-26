@@ -19,7 +19,10 @@ import java.util.Map;
  */
 public class JWTUtil {
 
-    private static final long TIME_OUT = 1200000000L; // 约20分钟
+    private static final long DEFAULT_TIME_OUT = 2 * 60 * 60 * 1000L;
+    private static final String DEFAULT_SECRET = "change-this-in-env";
+    private static volatile String secret = DEFAULT_SECRET;
+    private static volatile long timeout = DEFAULT_TIME_OUT;
 
     /**
      * 解析Token，同时也能验证Token
@@ -40,7 +43,7 @@ public class JWTUtil {
      * @return HMAC512算法
      */
     public static Algorithm getAlgorithm() {
-        return Algorithm.HMAC512(TokenEnum.KEY.getCode());
+        return Algorithm.HMAC512(secret);
     }
 
     /**
@@ -53,8 +56,21 @@ public class JWTUtil {
         return JWT.create()
                 .withClaim("user", JSON.toJSONString(userToken))
                 .withClaim("userName", userToken.getUserName())
-                .withExpiresAt(new Date(System.currentTimeMillis() + TIME_OUT))
+                .withExpiresAt(new Date(System.currentTimeMillis() + timeout))
                 .sign(getAlgorithm());
+    }
+
+    public static void configure(String jwtSecret, Long jwtTimeout) {
+        if (jwtSecret != null && !jwtSecret.isBlank()) {
+            secret = jwtSecret;
+        } else {
+            secret = DEFAULT_SECRET;
+        }
+        if (jwtTimeout != null && jwtTimeout > 0) {
+            timeout = jwtTimeout;
+        } else {
+            timeout = DEFAULT_TIME_OUT;
+        }
     }
 
     /**

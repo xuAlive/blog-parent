@@ -2,7 +2,9 @@ package com.xu.schedule.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.xu.schedule.domain.Schedule;
+import com.xu.schedule.domain.ScheduleEmployee;
 import com.xu.schedule.domain.Shift;
+import com.xu.schedule.mapper.ScheduleEmployeeMapper;
 import com.xu.schedule.mapper.ScheduleMapper;
 import com.xu.schedule.mapper.ShiftMapper;
 import com.xu.schedule.param.vo.ScheduleStatisticsVO;
@@ -10,9 +12,13 @@ import com.xu.schedule.param.vo.ScheduleStatisticsVO.ChartItem;
 import com.xu.schedule.param.vo.ScheduleStatisticsVO.DateStatItem;
 import com.xu.schedule.param.vo.ScheduleStatisticsVO.EmployeeStatItem;
 import com.xu.schedule.service.ScheduleStatisticsService;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -29,6 +35,7 @@ public class ScheduleStatisticsServiceImpl implements ScheduleStatisticsService 
 
     private final ScheduleMapper scheduleMapper;
     private final ShiftMapper shiftMapper;
+    private final ScheduleEmployeeMapper scheduleEmployeeMapper;
 
     private static final Map<Integer, String> STATUS_MAP = new HashMap<>();
 
@@ -39,9 +46,11 @@ public class ScheduleStatisticsServiceImpl implements ScheduleStatisticsService 
         STATUS_MAP.put(4, "加班");
     }
 
-    public ScheduleStatisticsServiceImpl(ScheduleMapper scheduleMapper, ShiftMapper shiftMapper) {
+    public ScheduleStatisticsServiceImpl(ScheduleMapper scheduleMapper, ShiftMapper shiftMapper,
+                                         ScheduleEmployeeMapper scheduleEmployeeMapper) {
         this.scheduleMapper = scheduleMapper;
         this.shiftMapper = shiftMapper;
+        this.scheduleEmployeeMapper = scheduleEmployeeMapper;
     }
 
     @Override
@@ -122,6 +131,41 @@ public class ScheduleStatisticsServiceImpl implements ScheduleStatisticsService 
         }
 
         return sb.toString();
+    }
+
+    @Override
+    public byte[] exportMonthlyCalendar(List<String> accounts, int year, int month) {
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            Map<Long, Shift> shiftMap = getShiftMap();
+            List<ScheduleEmployee> employees = resolveExportEmployees(accounts);
+            LocalDate firstDay = LocalDate.of(year, month, 1);
+            LocalDate lastDay = firstDay.with(TemporalAdjusters.lastDayOfMonth());
+            LocalDate start = firstDay.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            LocalDate end = lastDay.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
+
+            if (employees.isEmpty()) {
+                employees = new ArrayList<>();
+                ScheduleEmployee employee = new ScheduleEmployee();
+                employee.setEmployeeCode(accounts.isEmpty() ? "unknown" : accounts.get(0));
+                employee.setEmployeeName(accounts.isEmpty() ? "未命名员工" : accounts.get(0));
+                employees.add(employee);
+            }
+
+            List<ScheduleEmployee> exportEmployees = employees;
+            Map<String, List<Schedule>> scheduleMap = querySchedulesByAccounts(accounts, start, end).stream()
+                    .filter(s -> exportEmployees.stream().anyMatch(e -> e.getEmployeeCode().equals(s.getAccount())))
+                    .collect(Collectors.groupingBy(Schedule::getAccount));
+
+            for (ScheduleEmployee employee : exportEmployees) {
+                createEmployeeCalendarSheet(workbook, employee, year, month, start, end,
+                        scheduleMap.getOrDefault(employee.getEmployeeCode(), List.of()), shiftMap);
+            }
+
+            workbook.write(outputStream);
+            return outputStream.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("导出月排班失败", e);
+        }
     }
 
     /**
@@ -225,6 +269,21 @@ public class ScheduleStatisticsServiceImpl implements ScheduleStatisticsService 
         return scheduleMapper.selectList(wrapper);
     }
 
+    private List<Schedule> querySchedulesByAccounts(List<String> accounts, LocalDate startDate, LocalDate endDate) {
+        LambdaQueryWrapper<Schedule> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Schedule::getIsDelete, 0)
+                .ge(Schedule::getScheduleDate, startDate)
+                .le(Schedule::getScheduleDate, endDate);
+
+        if (accounts != null && !accounts.isEmpty()) {
+            wrapper.in(Schedule::getAccount, accounts);
+        }
+
+        wrapper.orderByAsc(Schedule::getScheduleDate)
+                .orderByAsc(Schedule::getAccount);
+        return scheduleMapper.selectList(wrapper);
+    }
+
     /**
      * 获取班次映射
      */
@@ -267,5 +326,166 @@ public class ScheduleStatisticsServiceImpl implements ScheduleStatisticsService 
      */
     private int getWeekOfYear(LocalDate date) {
         return date.get(java.time.temporal.WeekFields.of(Locale.CHINA).weekOfYear());
+    }
+
+    private List<ScheduleEmployee> resolveExportEmployees(List<String> accounts) {
+        LambdaQueryWrapper<ScheduleEmployee> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ScheduleEmployee::getIsDelete, 0)
+                .eq(ScheduleEmployee::getStatus, 1)
+                .orderByAsc(ScheduleEmployee::getEmployeeCode);
+        if (accounts != null && !accounts.isEmpty()) {
+            wrapper.in(ScheduleEmployee::getEmployeeCode, accounts);
+        }
+        return scheduleEmployeeMapper.selectList(wrapper);
+    }
+
+    private void createEmployeeCalendarSheet(Workbook workbook, ScheduleEmployee employee, int year, int month,
+                                             LocalDate start, LocalDate end, List<Schedule> schedules,
+                                             Map<Long, Shift> shiftMap) {
+        String sheetName = employee.getEmployeeName() != null && !employee.getEmployeeName().isBlank()
+                ? employee.getEmployeeName()
+                : employee.getEmployeeCode();
+        Sheet sheet = workbook.createSheet(sheetName.length() > 31 ? sheetName.substring(0, 31) : sheetName);
+
+        CellStyle titleStyle = createTitleStyle(workbook);
+        CellStyle headerStyle = createHeaderStyle(workbook);
+        CellStyle dayStyle = createDayStyle(workbook);
+        CellStyle detailStyle = createDetailStyle(workbook);
+        CellStyle blankStyle = createBlankStyle(workbook);
+        CellStyle mutedDayStyle = createMutedDayStyle(workbook);
+
+        for (int i = 0; i < 7; i++) {
+            sheet.setColumnWidth(i, 20 * 256);
+        }
+
+        Row titleRow = sheet.createRow(0);
+        titleRow.setHeightInPoints(26);
+        createCell(titleRow, 0, String.format("%d年%02d月排班确认表 - %s", year, month,
+                employee.getEmployeeName() != null ? employee.getEmployeeName() : employee.getEmployeeCode()), titleStyle);
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 6));
+
+        Row headerRow = sheet.createRow(1);
+        String[] weekNames = {"周一", "周二", "周三", "周四", "周五", "周六", "周日"};
+        for (int i = 0; i < weekNames.length; i++) {
+            createCell(headerRow, i, weekNames[i], headerStyle);
+        }
+
+        Map<LocalDate, Schedule> scheduleByDate = schedules.stream()
+                .collect(Collectors.toMap(Schedule::getScheduleDate, s -> s, (a, b) -> a));
+
+        int rowIndex = 2;
+        for (LocalDate weekStart = start; !weekStart.isAfter(end); weekStart = weekStart.plusWeeks(1)) {
+            Row dayRow = sheet.createRow(rowIndex++);
+            dayRow.setHeightInPoints(22);
+            Row detailRow = sheet.createRow(rowIndex++);
+            detailRow.setHeightInPoints(46);
+            Row blankRow = sheet.createRow(rowIndex++);
+            blankRow.setHeightInPoints(24);
+
+            for (int i = 0; i < 7; i++) {
+                LocalDate currentDate = weekStart.plusDays(i);
+                boolean inMonth = currentDate.getMonthValue() == month;
+                CellStyle currentDayStyle = inMonth ? dayStyle : mutedDayStyle;
+                CellStyle currentDetailStyle = inMonth ? detailStyle : mutedDayStyle;
+
+                createCell(dayRow, i, String.format("%02d", currentDate.getDayOfMonth()), currentDayStyle);
+
+                Schedule schedule = scheduleByDate.get(currentDate);
+                String detail = buildScheduleDetail(schedule, shiftMap);
+                createCell(detailRow, i, detail, currentDetailStyle);
+                createCell(blankRow, i, "", blankStyle);
+            }
+        }
+    }
+
+    private String buildScheduleDetail(Schedule schedule, Map<Long, Shift> shiftMap) {
+        if (schedule == null) {
+            return "";
+        }
+
+        StringBuilder detail = new StringBuilder();
+        if (schedule.getShiftName() != null) {
+            detail.append(schedule.getShiftName());
+        }
+        Shift shift = schedule.getShiftId() != null ? shiftMap.get(schedule.getShiftId()) : null;
+        if (shift != null && shift.getStartTime() != null && shift.getEndTime() != null) {
+            detail.append("\n")
+                    .append(shift.getStartTime())
+                    .append(" - ")
+                    .append(shift.getEndTime());
+        }
+        if (schedule.getStatus() != null && schedule.getStatus() != 1) {
+            detail.append("\n").append(STATUS_MAP.getOrDefault(schedule.getStatus(), "未知"));
+        }
+        if (schedule.getRemark() != null && !schedule.getRemark().isBlank()) {
+            detail.append("\n").append(schedule.getRemark());
+        }
+        return detail.toString();
+    }
+
+    private CellStyle createTitleStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        Font font = workbook.createFont();
+        font.setBold(true);
+        font.setFontHeightInPoints((short) 14);
+        style.setFont(font);
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        return style;
+    }
+
+    private CellStyle createHeaderStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        Font font = workbook.createFont();
+        font.setBold(true);
+        style.setFont(font);
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        applyBorder(style);
+        return style;
+    }
+
+    private CellStyle createDayStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        applyBorder(style);
+        return style;
+    }
+
+    private CellStyle createDetailStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setWrapText(true);
+        style.setVerticalAlignment(VerticalAlignment.TOP);
+        applyBorder(style);
+        return style;
+    }
+
+    private CellStyle createBlankStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        applyBorder(style);
+        return style;
+    }
+
+    private CellStyle createMutedDayStyle(Workbook workbook) {
+        CellStyle style = createDayStyle(workbook);
+        style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        return style;
+    }
+
+    private void applyBorder(CellStyle style) {
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+    }
+
+    private void createCell(Row row, int column, String value, CellStyle style) {
+        Cell cell = row.createCell(column);
+        cell.setCellValue(value);
+        cell.setCellStyle(style);
     }
 }

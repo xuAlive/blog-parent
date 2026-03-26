@@ -4,8 +4,10 @@ package com.xu.common.enums;
  * Token相关枚举常量
  */
 public enum TokenEnum {
-    KEY("xuBlog!@#123", "token密钥key"),
+    LEGACY_KEY("xuBlog!@#123", "旧版token包装密钥key"),
+    HEADER_AUTHORIZATION_KEY("Authorization", "标准认证请求头"),
     HEADER_TOKEN_KEY("token", "接口请求头部token信息key"),
+    BEARER_PREFIX("Bearer ", "Bearer前缀"),
     IS_TOKEN_NULL("1", "token为空, 解析失败!"),
     ERROR_TOKEN_OVERDUE("2", "token过期,请重新登陆!"),
     ERROR_TOKEN_ANALYSIS("3", "token错误, 解析失败!"),

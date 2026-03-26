@@ -14,4 +14,10 @@ public interface MiniappService extends IService<Miniapp> {
      * 获取所有有效的小程序列表
      */
     List<Miniapp> getValidList();
+
+    List<Miniapp> getManageList();
+
+    boolean offline(Integer id);
+
+    boolean online(Integer id);
 }

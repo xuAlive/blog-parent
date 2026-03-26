@@ -7,6 +7,7 @@ import com.xu.blog.mapper.MiniappMapper;
 import com.xu.blog.service.MiniappService;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -21,5 +22,35 @@ public class MiniappServiceImpl extends ServiceImpl<MiniappMapper, Miniapp> impl
         queryWrapper.eq("is_delete", 0)
                 .orderByAsc("sort_order");
         return this.list(queryWrapper);
+    }
+
+    @Override
+    public List<Miniapp> getManageList() {
+        QueryWrapper<Miniapp> queryWrapper = new QueryWrapper<>();
+        queryWrapper.orderByAsc("is_delete")
+                .orderByAsc("sort_order");
+        return this.list(queryWrapper);
+    }
+
+    @Override
+    public boolean offline(Integer id) {
+        Miniapp miniapp = this.getById(id);
+        if (miniapp == null || (miniapp.getIsDelete() != null && miniapp.getIsDelete() == 1)) {
+            throw new RuntimeException("小程序不存在");
+        }
+        miniapp.setIsDelete(1);
+        miniapp.setUpdateTime(new Date());
+        return this.updateById(miniapp);
+    }
+
+    @Override
+    public boolean online(Integer id) {
+        Miniapp miniapp = this.getById(id);
+        if (miniapp == null) {
+            throw new RuntimeException("小程序不存在");
+        }
+        miniapp.setIsDelete(0);
+        miniapp.setUpdateTime(new Date());
+        return this.updateById(miniapp);
     }
 }

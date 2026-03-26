@@ -21,6 +21,11 @@ public interface SysRoleService extends IService<SysRole> {
     boolean assignRoleToUser(String account, Integer roleId);
 
     /**
+     * 移除用户指定角色
+     */
+    boolean removeRoleFromUser(String account, Integer roleId);
+
+    /**
      * 获取角色编码（ADMIN/USER/GUEST）
      */
     String getRoleCodeByAccount(String account);

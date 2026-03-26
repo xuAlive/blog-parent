@@ -1,7 +1,9 @@
 package com.xu.schedule.controller;
 
 import com.xu.common.response.Response;
+import com.xu.common.utils.SessionUtil;
 import com.xu.schedule.param.vo.ScheduleStatisticsVO;
+import com.xu.schedule.service.ScheduleAccessService;
 import com.xu.schedule.service.ScheduleStatisticsService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -21,9 +23,11 @@ import java.time.format.DateTimeFormatter;
 public class ScheduleStatisticsController {
 
     private final ScheduleStatisticsService statisticsService;
+    private final ScheduleAccessService scheduleAccessService;
 
-    public ScheduleStatisticsController(ScheduleStatisticsService statisticsService) {
+    public ScheduleStatisticsController(ScheduleStatisticsService statisticsService, ScheduleAccessService scheduleAccessService) {
         this.statisticsService = statisticsService;
+        this.scheduleAccessService = scheduleAccessService;
     }
 
     /**
@@ -35,6 +39,7 @@ public class ScheduleStatisticsController {
     public Response<ScheduleStatisticsVO> getWeeklyStatistics(
             @RequestParam(value = "account", required = false) String account,
             @RequestParam(value = "date", required = false) String date) {
+        scheduleAccessService.requireAdmin(SessionUtil.getCurrentAccount());
         LocalDate targetDate = date != null ? LocalDate.parse(date) : LocalDate.now();
         ScheduleStatisticsVO vo = statisticsService.getWeeklyStatistics(account, targetDate);
         return Response.success(vo);
@@ -51,6 +56,7 @@ public class ScheduleStatisticsController {
             @RequestParam(value = "account", required = false) String account,
             @RequestParam(value = "year", required = false) Integer year,
             @RequestParam(value = "month", required = false) Integer month) {
+        scheduleAccessService.requireAdmin(SessionUtil.getCurrentAccount());
         LocalDate now = LocalDate.now();
         int targetYear = year != null ? year : now.getYear();
         int targetMonth = month != null ? month : now.getMonthValue();
@@ -69,6 +75,7 @@ public class ScheduleStatisticsController {
             @RequestParam(value = "account", required = false) String account,
             @RequestParam(value = "year", required = false) Integer year,
             @RequestParam(value = "quarter", required = false) Integer quarter) {
+        scheduleAccessService.requireAdmin(SessionUtil.getCurrentAccount());
         LocalDate now = LocalDate.now();
         int targetYear = year != null ? year : now.getYear();
         int targetQuarter = quarter != null ? quarter : (now.getMonthValue() - 1) / 3 + 1;
@@ -85,6 +92,7 @@ public class ScheduleStatisticsController {
     public Response<ScheduleStatisticsVO> getYearlyStatistics(
             @RequestParam(value = "account", required = false) String account,
             @RequestParam(value = "year", required = false) Integer year) {
+        scheduleAccessService.requireAdmin(SessionUtil.getCurrentAccount());
         int targetYear = year != null ? year : LocalDate.now().getYear();
         ScheduleStatisticsVO vo = statisticsService.getYearlyStatistics(account, targetYear);
         return Response.success(vo);
@@ -101,6 +109,7 @@ public class ScheduleStatisticsController {
             @RequestParam(value = "account", required = false) String account,
             @RequestParam("startDate") String startDate,
             @RequestParam("endDate") String endDate) {
+        scheduleAccessService.requireAdmin(SessionUtil.getCurrentAccount());
         LocalDate start = LocalDate.parse(startDate);
         LocalDate end = LocalDate.parse(endDate);
         ScheduleStatisticsVO vo = statisticsService.getCustomStatistics(account, start, end);
@@ -118,6 +127,7 @@ public class ScheduleStatisticsController {
             @RequestParam(value = "account", required = false) String account,
             @RequestParam("startDate") String startDate,
             @RequestParam("endDate") String endDate) {
+        scheduleAccessService.requireAdmin(SessionUtil.getCurrentAccount());
 
         LocalDate start = LocalDate.parse(startDate);
         LocalDate end = LocalDate.parse(endDate);
@@ -132,6 +142,36 @@ public class ScheduleStatisticsController {
         System.arraycopy(contentBytes, 0, result, bom.length, contentBytes.length);
 
         String filename = String.format("排班统计_%s_%s.csv", startDate, endDate);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.setContentDispositionFormData("attachment",
+                URLEncoder.encode(filename, StandardCharsets.UTF_8));
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(result);
+    }
+
+    @GetMapping("/exportMonthlyCalendar")
+    public ResponseEntity<byte[]> exportMonthlyCalendar(
+            @RequestParam("year") Integer year,
+            @RequestParam("month") Integer month,
+            @RequestParam(value = "account", required = false) String account) {
+        String currentAccount = SessionUtil.getCurrentAccount();
+        boolean admin = scheduleAccessService.isAdmin(currentAccount);
+
+        java.util.List<String> exportAccounts;
+        if (admin) {
+            exportAccounts = account != null && !account.isBlank()
+                    ? java.util.List.of(account)
+                    : java.util.List.of();
+        } else {
+            exportAccounts = java.util.List.of(currentAccount);
+        }
+
+        byte[] result = statisticsService.exportMonthlyCalendar(exportAccounts, year, month);
+        String filename = String.format("排班月历_%d-%02d.xlsx", year, month);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);

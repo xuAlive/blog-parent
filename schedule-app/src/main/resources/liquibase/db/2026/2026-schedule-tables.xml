@@ -5,133 +5,95 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                             http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
 
-    <!-- 创建班次表 -->
     <changeSet id="2026-001" author="schedule-app">
-        <createTable tableName="shift" remarks="班次表">
-            <column name="id" type="BIGINT" autoIncrement="true">
-                <constraints primaryKey="true" nullable="false"/>
-            </column>
-            <column name="shift_code" type="VARCHAR(50)" remarks="班次编码">
-                <constraints nullable="false" unique="true"/>
-            </column>
-            <column name="shift_name" type="VARCHAR(100)" remarks="班次名称">
-                <constraints nullable="false"/>
-            </column>
-            <column name="start_time" type="TIME" remarks="开始时间"/>
-            <column name="end_time" type="TIME" remarks="结束时间"/>
-            <column name="color" type="VARCHAR(20)" remarks="班次颜色"/>
-            <column name="description" type="VARCHAR(500)" remarks="描述"/>
-            <column name="status" type="TINYINT" defaultValue="1" remarks="状态：1-启用 0-禁用"/>
-            <column name="create_time" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP" remarks="创建时间"/>
-            <column name="update_time" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP" remarks="更新时间"/>
-            <column name="is_delete" type="TINYINT" defaultValue="0" remarks="是否删除：0-否 1-是"/>
-        </createTable>
+        <sql>
+            CREATE TABLE IF NOT EXISTS `shift` (
+                `id` BIGINT NOT NULL AUTO_INCREMENT,
+                `shift_code` VARCHAR(50) NOT NULL COMMENT '班次编码',
+                `shift_name` VARCHAR(100) NOT NULL COMMENT '班次名称',
+                `start_time` TIME DEFAULT NULL COMMENT '开始时间',
+                `end_time` TIME DEFAULT NULL COMMENT '结束时间',
+                `color` VARCHAR(20) DEFAULT NULL COMMENT '班次颜色',
+                `description` VARCHAR(500) DEFAULT NULL COMMENT '描述',
+                `status` TINYINT DEFAULT 1 COMMENT '状态：1-启用 0-禁用',
+                `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
+                `is_delete` TINYINT DEFAULT 0 COMMENT '是否删除：0-否 1-是',
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_shift_code` (`shift_code`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='班次表';
+        </sql>
     </changeSet>
 
-    <!-- 创建排班记录表 -->
     <changeSet id="2026-002" author="schedule-app">
-        <createTable tableName="schedule" remarks="排班记录表">
-            <column name="id" type="BIGINT" autoIncrement="true">
-                <constraints primaryKey="true" nullable="false"/>
-            </column>
-            <column name="account" type="VARCHAR(100)" remarks="员工账号">
-                <constraints nullable="false"/>
-            </column>
-            <column name="employee_name" type="VARCHAR(100)" remarks="员工姓名"/>
-            <column name="schedule_date" type="DATE" remarks="排班日期">
-                <constraints nullable="false"/>
-            </column>
-            <column name="shift_id" type="BIGINT" remarks="班次ID"/>
-            <column name="shift_name" type="VARCHAR(100)" remarks="班次名称"/>
-            <column name="status" type="TINYINT" defaultValue="1" remarks="状态：1-正常 2-请假 3-调休 4-加班"/>
-            <column name="remark" type="VARCHAR(500)" remarks="备注"/>
-            <column name="create_time" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP" remarks="创建时间"/>
-            <column name="update_time" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP" remarks="更新时间"/>
-            <column name="create_by" type="VARCHAR(100)" remarks="创建人"/>
-            <column name="is_delete" type="TINYINT" defaultValue="0" remarks="是否删除：0-否 1-是"/>
-        </createTable>
-
-        <!-- 添加索引 -->
-        <createIndex tableName="schedule" indexName="idx_schedule_account">
-            <column name="account"/>
-        </createIndex>
-        <createIndex tableName="schedule" indexName="idx_schedule_date">
-            <column name="schedule_date"/>
-        </createIndex>
-        <createIndex tableName="schedule" indexName="idx_schedule_account_date">
-            <column name="account"/>
-            <column name="schedule_date"/>
-        </createIndex>
+        <sql>
+            CREATE TABLE IF NOT EXISTS `schedule` (
+                `id` BIGINT NOT NULL AUTO_INCREMENT,
+                `account` VARCHAR(100) NOT NULL COMMENT '员工账号',
+                `employee_name` VARCHAR(100) DEFAULT NULL COMMENT '员工姓名',
+                `schedule_date` DATE NOT NULL COMMENT '排班日期',
+                `shift_id` BIGINT DEFAULT NULL COMMENT '班次ID',
+                `shift_name` VARCHAR(100) DEFAULT NULL COMMENT '班次名称',
+                `status` TINYINT DEFAULT 1 COMMENT '状态：1-正常 2-请假 3-调休 4-加班',
+                `remark` VARCHAR(500) DEFAULT NULL COMMENT '备注',
+                `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
+                `create_by` VARCHAR(100) DEFAULT NULL COMMENT '创建人',
+                `is_delete` TINYINT DEFAULT 0 COMMENT '是否删除：0-否 1-是',
+                PRIMARY KEY (`id`),
+                KEY `idx_schedule_account` (`account`),
+                KEY `idx_schedule_date` (`schedule_date`),
+                KEY `idx_schedule_account_date` (`account`, `schedule_date`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='排班记录表';
+        </sql>
     </changeSet>
 
-    <!-- 插入默认班次数据 -->
     <changeSet id="2026-003" author="schedule-app">
-        <insert tableName="shift">
-            <column name="shift_code" value="MORNING"/>
-            <column name="shift_name" value="早班"/>
-            <column name="start_time" value="08:00:00"/>
-            <column name="end_time" value="16:00:00"/>
-            <column name="color" value="#4CAF50"/>
-            <column name="description" value="早班：8:00 - 16:00"/>
-            <column name="status" value="1"/>
-        </insert>
-        <insert tableName="shift">
-            <column name="shift_code" value="AFTERNOON"/>
-            <column name="shift_name" value="中班"/>
-            <column name="start_time" value="14:00:00"/>
-            <column name="end_time" value="22:00:00"/>
-            <column name="color" value="#2196F3"/>
-            <column name="description" value="中班：14:00 - 22:00"/>
-            <column name="status" value="1"/>
-        </insert>
-        <insert tableName="shift">
-            <column name="shift_code" value="NIGHT"/>
-            <column name="shift_name" value="晚班"/>
-            <column name="start_time" value="22:00:00"/>
-            <column name="end_time" value="08:00:00"/>
-            <column name="color" value="#9C27B0"/>
-            <column name="description" value="晚班：22:00 - 次日8:00"/>
-            <column name="status" value="1"/>
-        </insert>
-        <insert tableName="shift">
-            <column name="shift_code" value="REST"/>
-            <column name="shift_name" value="休息"/>
-            <column name="color" value="#9E9E9E"/>
-            <column name="description" value="休息日"/>
-            <column name="status" value="1"/>
-        </insert>
+        <sql>
+            INSERT INTO `shift` (`shift_code`, `shift_name`, `start_time`, `end_time`, `color`, `description`, `status`)
+            SELECT 'MORNING', '早班', '08:00:00', '16:00:00', '#4CAF50', '早班：8:00 - 16:00', 1
+            FROM DUAL
+            WHERE NOT EXISTS (SELECT 1 FROM `shift` WHERE `shift_code` = 'MORNING');
+
+            INSERT INTO `shift` (`shift_code`, `shift_name`, `start_time`, `end_time`, `color`, `description`, `status`)
+            SELECT 'AFTERNOON', '中班', '14:00:00', '22:00:00', '#2196F3', '中班：14:00 - 22:00', 1
+            FROM DUAL
+            WHERE NOT EXISTS (SELECT 1 FROM `shift` WHERE `shift_code` = 'AFTERNOON');
+
+            INSERT INTO `shift` (`shift_code`, `shift_name`, `start_time`, `end_time`, `color`, `description`, `status`)
+            SELECT 'NIGHT', '晚班', '22:00:00', '08:00:00', '#9C27B0', '晚班：22:00 - 次日8:00', 1
+            FROM DUAL
+            WHERE NOT EXISTS (SELECT 1 FROM `shift` WHERE `shift_code` = 'NIGHT');
+
+            INSERT INTO `shift` (`shift_code`, `shift_name`, `color`, `description`, `status`)
+            SELECT 'REST', '休息', '#9E9E9E', '休息日', 1
+            FROM DUAL
+            WHERE NOT EXISTS (SELECT 1 FROM `shift` WHERE `shift_code` = 'REST');
+        </sql>
     </changeSet>
 
-    <!-- 创建员工表 -->
     <changeSet id="2026-004" author="schedule-app">
-        <createTable tableName="schedule_employee" remarks="员工表">
-            <column name="id" type="BIGINT" autoIncrement="true">
-                <constraints primaryKey="true" nullable="false"/>
-            </column>
-            <column name="employee_code" type="VARCHAR(50)" remarks="员工编号">
-                <constraints nullable="false" unique="true"/>
-            </column>
-            <column name="employee_name" type="VARCHAR(100)" remarks="员工姓名">
-                <constraints nullable="false"/>
-            </column>
-            <column name="department" type="VARCHAR(100)" remarks="部门"/>
-            <column name="position" type="VARCHAR(100)" remarks="职位"/>
-            <column name="phone" type="VARCHAR(20)" remarks="联系电话"/>
-            <column name="email" type="VARCHAR(100)" remarks="邮箱"/>
-            <column name="entry_date" type="DATE" remarks="入职日期"/>
-            <column name="status" type="TINYINT" defaultValue="1" remarks="状态：1-在职 2-离职 3-休假"/>
-            <column name="create_time" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP" remarks="创建时间"/>
-            <column name="update_time" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP" remarks="更新时间"/>
-            <column name="create_by" type="VARCHAR(100)" remarks="创建人"/>
-            <column name="is_delete" type="TINYINT" defaultValue="0" remarks="是否删除：0-否 1-是"/>
-        </createTable>
-
-        <createIndex tableName="schedule_employee" indexName="idx_sch_emp_code">
-            <column name="employee_code"/>
-        </createIndex>
-        <createIndex tableName="schedule_employee" indexName="idx_sch_emp_dept">
-            <column name="department"/>
-        </createIndex>
+        <sql>
+            CREATE TABLE IF NOT EXISTS `schedule_employee` (
+                `id` BIGINT NOT NULL AUTO_INCREMENT,
+                `employee_code` VARCHAR(50) NOT NULL COMMENT '员工编号',
+                `employee_name` VARCHAR(100) NOT NULL COMMENT '员工姓名',
+                `department` VARCHAR(100) DEFAULT NULL COMMENT '部门',
+                `position` VARCHAR(100) DEFAULT NULL COMMENT '职位',
+                `phone` VARCHAR(20) DEFAULT NULL COMMENT '联系电话',
+                `email` VARCHAR(100) DEFAULT NULL COMMENT '邮箱',
+                `entry_date` DATE DEFAULT NULL COMMENT '入职日期',
+                `status` TINYINT DEFAULT 1 COMMENT '状态：1-在职 2-离职 3-休假',
+                `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
+                `create_by` VARCHAR(100) DEFAULT NULL COMMENT '创建人',
+                `is_delete` TINYINT DEFAULT 0 COMMENT '是否删除：0-否 1-是',
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_sch_emp_code` (`employee_code`),
+                KEY `idx_sch_emp_code` (`employee_code`),
+                KEY `idx_sch_emp_dept` (`department`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='员工表';
+        </sql>
     </changeSet>
 
 </databaseChangeLog>

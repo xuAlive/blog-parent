@@ -3,6 +3,7 @@ package com.xu.schedule.service;
 import com.xu.schedule.param.vo.ScheduleStatisticsVO;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * 排班统计服务接口
@@ -51,4 +52,9 @@ public interface ScheduleStatisticsService {
      * 导出统计报表（返回CSV格式数据）
      */
     String exportStatistics(String account, LocalDate startDate, LocalDate endDate);
+
+    /**
+     * 导出月排班日历 Excel
+     */
+    byte[] exportMonthlyCalendar(List<String> accounts, int year, int month);
 }

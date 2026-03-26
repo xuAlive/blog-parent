@@ -6,4 +6,23 @@
 
     <!-- 2026年新建表 -->
 
+    <!-- 图片上传记录表 -->
+    <changeSet id="2026-003-create-blog-image" author="xubaolin">
+        <sql>
+            CREATE TABLE `blog_image` (
+                `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键',
+                `account` VARCHAR(64) NOT NULL COMMENT '上传者账号',
+                `original_name` VARCHAR(255) DEFAULT NULL COMMENT '原始文件名',
+                `file_name` VARCHAR(255) NOT NULL COMMENT '存储文件名',
+                `file_path` VARCHAR(500) NOT NULL COMMENT '文件存储路径',
+                `image_url` VARCHAR(500) NOT NULL COMMENT '图片访问URL',
+                `file_size` BIGINT DEFAULT NULL COMMENT '文件大小(字节)',
+                `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
+                PRIMARY KEY (`id`),
+                KEY `idx_account` (`account`),
+                KEY `idx_create_time` (`create_time`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='图片上传记录表';
+        </sql>
+    </changeSet>
+
 </databaseChangeLog>

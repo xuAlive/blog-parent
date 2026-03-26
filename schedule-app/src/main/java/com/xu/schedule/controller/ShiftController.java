@@ -2,7 +2,9 @@ package com.xu.schedule.controller;
 
 import com.xu.common.param.IdPO;
 import com.xu.common.response.Response;
+import com.xu.common.utils.SessionUtil;
 import com.xu.schedule.domain.Shift;
+import com.xu.schedule.service.ScheduleAccessService;
 import com.xu.schedule.service.ShiftService;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,9 +19,11 @@ import java.util.List;
 public class ShiftController {
 
     private final ShiftService shiftService;
+    private final ScheduleAccessService scheduleAccessService;
 
-    public ShiftController(ShiftService shiftService) {
+    public ShiftController(ShiftService shiftService, ScheduleAccessService scheduleAccessService) {
         this.shiftService = shiftService;
+        this.scheduleAccessService = scheduleAccessService;
     }
 
     /**
@@ -36,6 +40,7 @@ public class ShiftController {
      */
     @GetMapping("/listAll")
     public Response<List<Shift>> getAllShifts() {
+        scheduleAccessService.requireAdmin(SessionUtil.getCurrentAccount());
         List<Shift> shifts = shiftService.list();
         return Response.success(shifts);
     }
@@ -45,6 +50,7 @@ public class ShiftController {
      */
     @PostMapping("/create")
     public Response<?> createShift(@RequestBody Shift shift) {
+        scheduleAccessService.requireAdmin(SessionUtil.getCurrentAccount());
         shift.setCreateTime(LocalDateTime.now());
         shift.setUpdateTime(LocalDateTime.now());
         shift.setIsDelete(0);
@@ -60,6 +66,7 @@ public class ShiftController {
      */
     @PostMapping("/update")
     public Response<?> updateShift(@RequestBody Shift shift) {
+        scheduleAccessService.requireAdmin(SessionUtil.getCurrentAccount());
         shift.setUpdateTime(LocalDateTime.now());
         boolean result = shiftService.updateById(shift);
         return Response.checkResult(result);
@@ -70,6 +77,7 @@ public class ShiftController {
      */
     @PostMapping("/delete")
     public Response<?> deleteShift(@RequestBody IdPO po) {
+        scheduleAccessService.requireAdmin(SessionUtil.getCurrentAccount());
         Long id = po.getId();
         Shift shift = new Shift();
         shift.setId(id);

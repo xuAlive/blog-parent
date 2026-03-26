@@ -15,7 +15,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 微信授权服务实现
@@ -23,6 +26,9 @@ import java.util.UUID;
 @Slf4j
 @Service
 public class WechatAuthServiceImpl implements WechatAuthService {
+
+    private static final long LOGIN_CODE_EXPIRE_MILLIS = 60_000L;
+    private static final Map<String, LoginCodeEntry> LOGIN_CODE_CACHE = new ConcurrentHashMap<>();
 
     private final WechatConfig wechatConfig;
     private final SysUserMapper sysUserMapper;
@@ -100,6 +106,22 @@ public class WechatAuthServiceImpl implements WechatAuthService {
     }
 
     @Override
+    public String issueLoginCode(String token) {
+        String loginCode = UUID.randomUUID().toString().replace("-", "");
+        LOGIN_CODE_CACHE.put(loginCode, new LoginCodeEntry(token, Instant.now().toEpochMilli() + LOGIN_CODE_EXPIRE_MILLIS));
+        return loginCode;
+    }
+
+    @Override
+    public String exchangeLoginCode(String loginCode) {
+        LoginCodeEntry entry = LOGIN_CODE_CACHE.remove(loginCode);
+        if (entry == null || entry.expireAt() < Instant.now().toEpochMilli()) {
+            throw new RuntimeException("登录凭证已失效");
+        }
+        return entry.token();
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public SysUser getOrCreateUser(String openid, String nickname, String avatar) {
         // 查找已有用户
@@ -135,5 +157,8 @@ public class WechatAuthServiceImpl implements WechatAuthService {
         }
 
         return newUser;
+    }
+
+    private record LoginCodeEntry(String token, long expireAt) {
     }
 }

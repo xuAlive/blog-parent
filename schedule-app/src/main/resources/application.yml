@@ -42,3 +42,8 @@ mybatis-plus:
 logging:
   level:
     com.xu.schedule: debug
+
+blog:
+  jwt:
+    secret: ${BLOG_JWT_SECRET:change-this-in-env}
+    expire-ms: ${BLOG_JWT_EXPIRE_MS:7200000}

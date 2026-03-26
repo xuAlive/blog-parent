@@ -59,4 +59,26 @@
         </sql>
     </changeSet>
 
+    <!-- 系统管理新增小程序管理菜单 -->
+    <changeSet id="2026-003-insert-miniapp-manage-menu" author="xubaolin">
+        <sql>
+            INSERT INTO sys_menu ( parent_id, menu_name, menu_code, menu_type, path, component, icon, sort_order, visible, status)
+            SELECT  10, '小程序管理', 'SYSTEM_MINIAPP', 2, '/index/miniappManage', 'views/system/miniappManage.vue', 'el-icon-cellphone', 6, 1, 1
+            FROM DUAL
+            WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE  menu_code = 'SYSTEM_MINIAPP');
+
+            UPDATE sys_menu
+            SET parent_id = 10,
+                menu_name = '小程序管理',
+                menu_type = 2,
+                path = '/index/miniappManage',
+                component = 'views/system/miniappManage.vue',
+                icon = 'el-icon-cellphone',
+                sort_order = 6,
+                visible = 1,
+                status = 1
+            WHERE menu_code = 'SYSTEM_MINIAPP';
+        </sql>
+    </changeSet>
+
 </databaseChangeLog>

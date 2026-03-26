@@ -77,6 +77,12 @@
             <artifactId>commons-lang3</artifactId>
         </dependency>
 
+        <!-- Password hashing -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
+        </dependency>
+
         <!-- IP 地址解析 -->
         <dependency>
             <groupId>org.lionsoul</groupId>

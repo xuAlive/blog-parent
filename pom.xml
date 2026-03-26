@@ -19,6 +19,7 @@
         <module>blog</module>
         <module>schedule-app</module>
         <module>calendar-app</module>
+        <module>timesheet-app</module>
     </modules>
 
     <properties>
@@ -41,6 +42,7 @@
         <java-jwt.version>4.5.0</java-jwt.version>
         <fastjson2.version>2.0.60</fastjson2.version>
         <ip2region.version>2.7.0</ip2region.version>
+        <poi.version>5.4.1</poi.version>
 
         <!-- 插件版本 -->
         <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
@@ -111,6 +113,12 @@
                 <groupId>org.lionsoul</groupId>
                 <artifactId>ip2region</artifactId>
                 <version>${ip2region.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.poi</groupId>
+                <artifactId>poi-ooxml</artifactId>
+                <version>${poi.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

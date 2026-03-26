@@ -55,6 +55,19 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean removeRoleFromUser(String account, Integer roleId) {
+        try {
+            QueryWrapper<SysUserRole> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("account", account).eq("role_id", roleId);
+            return sysUserRoleMapper.delete(queryWrapper) >= 0;
+        } catch (Exception e) {
+            log.error("移除角色失败", e);
+            throw new RuntimeException("移除角色失败");
+        }
+    }
+
+    @Override
     public String getRoleCodeByAccount(String account) {
         List<SysRole> roles = getRolesByAccount(account);
         if (roles == null || roles.isEmpty()) {
