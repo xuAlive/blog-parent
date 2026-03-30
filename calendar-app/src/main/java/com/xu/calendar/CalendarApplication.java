@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 /**
  * 日历系统启动类
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.xu")
 @MapperScan("com.xu.calendar.mapper")
 public class CalendarApplication {
 

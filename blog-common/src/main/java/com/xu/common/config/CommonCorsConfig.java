@@ -1,4 +1,4 @@
-package com.xu.timesheet.config;
+package com.xu.common.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,14 +9,11 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
 /**
- * 跨域配置
+ * 通用跨域配置，确保在拦截器之前生效。
  */
 @Configuration
-public class CorsConfig {
+public class CommonCorsConfig {
 
-    /**
-     * 注册全局跨域过滤器
-     */
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
     public CorsFilter corsFilter() {

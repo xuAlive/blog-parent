@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 /**
  * 排班系统启动类
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.xu")
 @MapperScan("com.xu.schedule.mapper")
 public class ScheduleApplication {
 

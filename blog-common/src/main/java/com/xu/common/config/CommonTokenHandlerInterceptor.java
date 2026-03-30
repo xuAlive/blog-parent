@@ -1,4 +1,4 @@
-package com.xu.schedule.config;
+package com.xu.common.config;
 
 import com.alibaba.fastjson2.JSON;
 import com.auth0.jwt.exceptions.JWTDecodeException;
@@ -10,18 +10,20 @@ import com.xu.common.context.UserContext;
 import com.xu.common.enums.TokenEnum;
 import com.xu.common.param.UserToken;
 import com.xu.common.utils.JWTUtil;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.util.Map;
-
+/**
+ * 通用 Token 鉴权拦截器。
+ */
 @Slf4j
 @Component
-public class TokenHandlerAdapter implements HandlerInterceptor {
+public class CommonTokenHandlerInterceptor implements HandlerInterceptor {
 
     private static final String TOKEN_SPLIT = "##";
 

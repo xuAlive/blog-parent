@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 
 @MapperScan("com.xu.blog.mapper")
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.xu")
 public class BlogApplication {
     public static void main(String[] args) {
         SpringApplication.run(BlogApplication.class);

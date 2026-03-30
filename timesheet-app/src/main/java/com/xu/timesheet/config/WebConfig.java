@@ -1,28 +1,27 @@
 package com.xu.timesheet.config;
 
+import com.xu.common.config.BaseTokenWebConfig;
+import com.xu.common.config.CommonTokenHandlerInterceptor;
+import java.util.List;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * Web MVC 配置
  */
 @Configuration
-public class WebConfig implements WebMvcConfigurer {
+public class WebConfig extends BaseTokenWebConfig {
 
-    private final TokenHandlerAdapter tokenHandlerAdapter;
-
-    public WebConfig(TokenHandlerAdapter tokenHandlerAdapter) {
-        this.tokenHandlerAdapter = tokenHandlerAdapter;
+    public WebConfig(CommonTokenHandlerInterceptor tokenHandlerInterceptor) {
+        super(tokenHandlerInterceptor);
     }
 
-    /**
-     * 为工时接口注册 Token 拦截器
-     */
     @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(tokenHandlerAdapter)
-                .addPathPatterns("/timesheet/**")
-                .excludePathPatterns("/timesheet/health");
+    protected String[] getIncludePatterns() {
+        return new String[]{"/timesheet/**"};
+    }
+
+    @Override
+    protected List<String> getExcludePatterns() {
+        return List.of("/timesheet/health");
     }
 }

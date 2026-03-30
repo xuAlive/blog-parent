@@ -1,32 +1,28 @@
 package com.xu.schedule.config;
 
+import com.xu.common.config.BaseTokenWebConfig;
+import com.xu.common.config.CommonTokenHandlerInterceptor;
+import java.util.List;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * Web 配置类
  * 配置拦截器
  */
 @Configuration
-public class WebConfig implements WebMvcConfigurer {
+public class WebConfig extends BaseTokenWebConfig {
 
-    private final TokenHandlerAdapter tokenHandlerAdapter;
-
-    public WebConfig(TokenHandlerAdapter tokenHandlerAdapter) {
-        this.tokenHandlerAdapter = tokenHandlerAdapter;
+    public WebConfig(CommonTokenHandlerInterceptor tokenHandlerInterceptor) {
+        super(tokenHandlerInterceptor);
     }
 
-    /**
-     * 拦截器配置
-     */
     @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        // Token 验证拦截器
-        registry.addInterceptor(tokenHandlerAdapter)
-                .addPathPatterns("/schedule/**")
-                .excludePathPatterns(
-                        "/schedule/health"  // 健康检查接口不需要验证
-                );
+    protected String[] getIncludePatterns() {
+        return new String[]{"/schedule/**"};
+    }
+
+    @Override
+    protected List<String> getExcludePatterns() {
+        return List.of("/schedule/health");
     }
 }

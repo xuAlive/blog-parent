@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 /**
  * 工时记录系统启动类
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.xu")
 @MapperScan("com.xu.timesheet.mapper")
 public class TimesheetApplication {
 

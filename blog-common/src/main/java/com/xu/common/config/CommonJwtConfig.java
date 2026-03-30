@@ -1,13 +1,16 @@
-package com.xu.schedule.config;
+package com.xu.common.config;
 
 import com.xu.common.utils.JWTUtil;
 import jakarta.annotation.PostConstruct;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * 统一初始化 JWT 配置。
+ */
 @Configuration
 @ConfigurationProperties(prefix = "blog.jwt")
-public class JwtConfig {
+public class CommonJwtConfig {
 
     private String secret;
     private Long expireMs;
